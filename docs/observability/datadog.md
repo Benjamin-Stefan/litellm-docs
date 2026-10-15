@@ -189,7 +189,7 @@ Publishes the following metrics to Datadog:
 | `litellm.overhead.latency.distribution` | Distribution | Same value as above, as a distribution |
 | `litellm.llm_api.request_count` | Count | Request count, tagged with status code |
 
-Gauges and counts go to `/api/v2/series`, distributions go to `/api/v1/distribution_points`. Datadog stores one gauge value per second per tag set, so under concurrent traffic to the same model the gauges only keep the last sample in each second. Use the `.distribution` metrics for `avg`, `p50`, `p95` and `p99` over every request. Note that Datadog counts a distribution as several custom metrics per unique tag set, so check your custom metrics quota.
+Gauges and counts go to `/api/v2/series`, distributions go to `/api/v1/distribution_points`. Datadog stores one gauge value per second per tag set, so under concurrent traffic to the same model the gauges only keep the last sample in each second. Use the `.distribution` metrics for `avg`, `min`, `max`, `sum` and `count` over every request. Percentile queries (`p50` to `p99`) on them return no data: Datadog only computes percentiles for a distribution after you turn them on for that metric, and it refuses to for `litellm.*` metrics because that namespace belongs to its LiteLLM integration. Datadog counts each distribution as several custom metrics per unique tag set, so check your custom metrics quota.
 
 Using `total_latency` and `llm_api.latency`, you can derive **internal latency** = `total_latency - llm_api.latency`.
 
