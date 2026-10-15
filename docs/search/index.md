@@ -187,6 +187,23 @@ curl http://0.0.0.0:4000/v1/search/my-search \
   }'
 ```
 
+### Custom Per-Query Pricing
+
+Set `input_cost_per_query` under a search tool's `litellm_params` to charge your own price per search query. LiteLLM uses it instead of the cost map price for that tool, so `x-litellm-response-cost` and the spend logs match the rate you pay. It works for every search provider, and a tool without it keeps the provider's cost map price.
+
+```yaml showLineNumbers title="config.yaml with a custom price"
+search_tools:
+  - search_tool_name: exa-search
+    litellm_params:
+      search_provider: exa_ai
+      api_key: os.environ/EXA_API_KEY
+      input_cost_per_query: 0.05
+```
+
+A request with a list of queries is billed once per query. A price of `0` is kept as a free tool, not treated as unset.
+
+In the Admin UI, open **Search Tools** and set **Cost per Query (USD)** when you add or edit a search tool. The tool's detail page shows the configured price, or `Provider default` when none is set. Clearing the field on an edit removes the custom price and the tool falls back to the cost map.
+
 ### Restrict Search Tool Access
 
 Set `search_tools` under `object_permission` on a key or team to limit which search tools it can call. The allowlist applies to `/search`, `/v1/search`, `/search/{search_tool_name}`, web search interception, router fallbacks between search tools, and `/search_tools/list`
