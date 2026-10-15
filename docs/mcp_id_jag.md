@@ -199,6 +199,12 @@ curl -X POST "https://litellm.example.com/internal_tools/mcp" \
 
 Assertion reads are cached per process for `MCP_SSO_ASSERTION_CACHE_TTL_SECONDS` (default 60), so a fresh SSO login on one pod becomes visible to the others within one TTL.
 
+### Which SSO logins capture the assertion
+
+The assertion is the `id_token` in the IdP token response at UI or CLI sign-in, so every login that goes through an OIDC token endpoint captures one: Microsoft Entra (`MICROSOFT_CLIENT_ID`), Google (`GOOGLE_CLIENT_ID`) and generic OIDC (`GENERIC_CLIENT_ID`). The gateway only keeps it while at least one MCP server with `auth_type: oauth2_id_jag` is registered. SAML has no `id_token`, so a SAML-only deployment cannot use the store-sourced subject and every store-sourced call answers `412`; the proxy logs that gap once at startup and once per login.
+
+The stored `id_token` expires on the IdP's schedule, about an hour on Entra and Google. LiteLLM renews it with the refresh token captured beside it, redeemed against the same client the login used (the Microsoft, Google or generic client and its token endpoint). A refresh token is only issued when the login asked for one: Entra needs the `offline_access` scope, Google needs `access_type=offline` on the authorization request, and generic OIDC needs `offline_access` in `GENERIC_SCOPE`. The Microsoft and Google logins request their providers' default scopes, so on those providers the assertion lasts for one `id_token` lifetime and the next sign-in replaces it.
+
 ## Credential Errors at Connect Time
 
 On a single-server route such as `/internal_tools/mcp` or `/mcp/internal_tools`, LiteLLM resolves the ID-JAG credential before it opens the MCP session, so a failure comes back as an HTTP status the client can act on rather than as a session that appears to have no tools. This runs for the store-sourced flow (no `Authorization` header), which is exactly where the failures below are decided before any authorization server is called.
